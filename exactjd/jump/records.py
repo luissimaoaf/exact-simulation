@@ -254,8 +254,10 @@ class P2BridgeFactory:
     """
 
     def __init__(self, ou, mode: str = "exact", race_kmax: int = 3, race_kmin: int = -10,
-                 max_factory_coins: int | None = 20000, budget: Budget = NULL_BUDGET):
+                 max_factory_coins: int | None = 20000, budget: Budget = NULL_BUDGET,
+                 certification: str = "certified"):
         self.ou, self.mode, self.kmax, self.kmin = ou, mode, race_kmax, race_kmin
+        self.certification = certification
         self.max_factory_coins, self.budget = max_factory_coins, budget
         self.diagnostics: list = []
         self.tv_bounds: list = []
@@ -266,7 +268,8 @@ class P2BridgeFactory:
         from ..correction import moment as mom
         self.budget.tick("bridge_record")
         h = t - s
-        orc = OUGuidedOracle(self.ou, np.asarray(x, float), np.asarray(y, float), h, budget=self.budget)
+        orc = OUGuidedOracle(self.ou, np.asarray(x, float), np.asarray(y, float), h, budget=self.budget,
+                             certification=self.certification, estimate_solver=(self.certification == "certified"))
         cert = mom.ou_tight_certificate(self.ou, h, x, y)
         if self.mode == "exact":
             env = LogEnvelope(cert["M_c"])

@@ -1,0 +1,15 @@
+d=3, T=1.0, x0=[1.0, 0.5, -0.5], lambda(x)=1+|x|^2 (unbounded), update x -> 0.5 x + Z, |Z_j|=0.2
+N_T = 3 events;  primitive calls: {'transition': 133, 'bridge_record': 133, 'label_refine': 391, 'skeleton_trial': 15, 'candidate': 6}
+
+event 1: tau=0.065306  pre=[1.2892, 0.3238, -0.5515]  mark=[0.2, 0.2, 0.2]  post=[0.8446, 0.3619, -0.0758]
+event 2: tau=0.548132  pre=[1.1705, 0.7123, 0.3428]  mark=[0.2, 0.2, -0.2]  post=[0.7852, 0.5561, -0.0286]
+event 3: tau=0.672690  pre=[1.0463, 1.1437, 0.3103]  mark=[0.2, -0.2, -0.2]  post=[0.7232, 0.3718, -0.0448]
+terminal X_T = [0.5963, 0.0898, -0.3444]
+
+call | theta  label  ell(local rate bound)  candidates  recon.trials  bridges built
+   1 | 0.625    1       10.515             11           2           24
+   2 | 0.569    1        9.803              4           1            5
+   3 | 0.635    1       10.645              8          11           99
+   4 | 0.331    0        2.582              0           1            1
+
+refine(0.1): certified uniform radius 0.0953;  refine(0.05): radius 0.0487;  max |path_eps - path_eps/2| = 0.0042 <= 0.1440

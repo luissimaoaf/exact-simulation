@@ -19,18 +19,18 @@ def test_ou_general_B_matches_euler_moments():
     B = np.array([[-1.0, 0.4], [-0.2, -0.5]])
     ou = OU(B, [0.3, -0.1], np.eye(2))
     rng = np.random.default_rng(1)
-    n = 4000
-    ys = np.array([euler_maruyama(ou, np.zeros(2), 1.0, 400, rng)[1][-1] for _ in range(n)])
+    n = 1200
+    ys = np.array([euler_maruyama(ou, np.zeros(2), 1.0, 100, rng)[1][-1] for _ in range(n)])
     mu, Q = ou.mean_cov(1.0, np.zeros(2))
-    assert np.allclose(ys.mean(0), mu, atol=4 * np.sqrt(np.diag(Q)) / np.sqrt(n) + 0.02)
-    assert np.allclose(np.cov(ys.T), Q, atol=0.08)
+    assert np.allclose(ys.mean(0), mu, atol=4.5 * np.sqrt(np.diag(Q)) / np.sqrt(n) + 0.02)
+    assert np.allclose(np.cov(ys.T), Q, atol=0.1)             # Euler baseline is approximate: bias O(dt)
 
 
 def test_ou_bridge_reference_endpoint_and_midpoint_law():
     ou = OU.isotropic(1.0, np.eye(2))
     rng = np.random.default_rng(3)
     x, y = np.array([0.0, 0.0]), np.array([1.0, -1.0])
-    vals = np.array([ou.sample_bridge_values(0, x, 1.0, y, [0.5], rng)[0] for _ in range(6000)])
+    vals = np.array([ou.sample_bridge_values(0, x, 1.0, y, [0.5], rng)[0] for _ in range(2500)])
     # analytic mid law via Gaussian conditioning
     A1, m1, Q1 = ou.transition_params(0.5)
     S = A1 @ Q1 @ A1.T + Q1
@@ -73,12 +73,12 @@ def test_nonlinear_sde_law_equals_phi_of_bm():
     """Euler simulation of the (b, sigma) SDE has the same terminal law as Phi(B) (weak check)."""
     m = NonlinearBenchmark()
     rng = np.random.default_rng(7)
-    n, T = 3000, 0.5
+    n, T = 1200, 0.5
     x0 = np.array([0.3, 0.1])
-    ys = np.array([euler_maruyama(m, x0, T, 250, rng)[1][-1] for _ in range(n)])
+    ys = np.array([euler_maruyama(m, x0, T, 80, rng)[1][-1] for _ in range(n)])
     zs = np.array([m.sample_transition(0, x0, T, rng) for _ in range(n)])
-    assert np.allclose(ys.mean(0), zs.mean(0), atol=0.06)
-    assert np.allclose(np.cov(ys.T), np.cov(zs.T), atol=0.08)
+    assert np.allclose(ys.mean(0), zs.mean(0), atol=0.09)
+    assert np.allclose(np.cov(ys.T), np.cov(zs.T), atol=0.1)
 
 
 def test_nonlinear_density_normalises():

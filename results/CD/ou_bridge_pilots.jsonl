@@ -1,0 +1,32 @@
+{"config": "ou_bridge_T0.1", "run": 0, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.1", "run": 0, "seed": 5, "status": "censored", "reason": "time budget 60s exceeded", "wall": 59.99074668399953, "calls": {"race_trial": 2, "membership_refine": 2222, "factory_coin": 448}, "peak_rss_mb": 397.87109375}
+{"config": "ou_bridge_T0.1", "run": 1, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.1", "run": 1, "seed": 5, "status": "censored", "reason": "time budget 60s exceeded", "wall": 60.83616239499952, "calls": {"race_trial": 1, "factory_coin": 832, "membership_refine": 2548}, "peak_rss_mb": 397.87109375}
+{"config": "ou_bridge_T0.1", "run": 2, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.1", "run": 2, "seed": 5, "status": "censored", "reason": "time budget 60s exceeded", "wall": 60.28965760799929, "calls": {"race_trial": 13, "membership_refine": 2048, "factory_coin": 484}, "peak_rss_mb": 397.87109375}
+{"config": "ou_bridge_T0.1", "run": 3, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.1", "run": 3, "seed": 5, "status": "censored", "reason": "time budget 60s exceeded", "wall": 61.273044796999784, "calls": {"race_trial": 2, "membership_refine": 2112, "factory_coin": 692}, "peak_rss_mb": 397.87109375}
+{"config": "ou_bridge_T0.1", "run": 4, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.1", "run": 4, "seed": 5, "status": "completed", "result": {"trials": 1, "coins": 1, "band": -1, "level": 14, "radius": 0.4453500331401531}, "wall": 4.095414805000473, "calls": {"race_trial": 1, "membership_refine": 14, "final_refine": 2}, "peak_rss_mb": 403.515625}
+{"config": "ou_bridge_T0.1", "run": 5, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.1", "run": 5, "seed": 5, "status": "censored", "reason": "time budget 60s exceeded", "wall": 61.12938268199923, "calls": {"race_trial": 1, "factory_coin": 657, "membership_refine": 2560}, "peak_rss_mb": 403.515625}
+{"config": "ou_bridge_T0.1", "run": 6, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.1", "run": 6, "seed": 5, "status": "censored", "reason": "refinement level 20 exceeds MAX_LEVEL=19", "wall": 14.109725222000634, "calls": {"race_trial": 6, "membership_refine": 216, "factory_coin": 27}, "peak_rss_mb": 667.10546875}
+{"config": "ou_bridge_T0.1", "run": 7, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.1", "run": 7, "seed": 5, "status": "completed", "result": {"trials": 2, "coins": 2, "band": -1, "level": 12, "radius": 0.44537602714485724}, "wall": 0.9899977299992315, "calls": {"race_trial": 2, "membership_refine": 19, "final_refine": 4}, "peak_rss_mb": 667.10546875}
+{"config": "ou_bridge_T0.25", "run": 0, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.25", "run": 0, "seed": 5, "status": "censored", "reason": "refinement level 20 exceeds MAX_LEVEL=19", "wall": 41.133845235999615, "calls": {"race_trial": 9, "membership_refine": 1285, "factory_coin": 165}, "peak_rss_mb": 667.53125}
+{"config": "ou_bridge_T0.25", "run": 1, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.25", "run": 1, "seed": 5, "status": "censored", "reason": "time budget 60s exceeded", "wall": 60.568821658999696, "calls": {"race_trial": 2, "factory_coin": 355, "membership_refine": 2176}, "peak_rss_mb": 667.53125}
+{"config": "ou_bridge_T0.25", "run": 2, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.25", "run": 2, "seed": 5, "status": "censored", "reason": "time budget 60s exceeded", "wall": 60.957285226999375, "calls": {"race_trial": 5, "membership_refine": 2112, "factory_coin": 312}, "peak_rss_mb": 667.53125}
+{"config": "ou_bridge_T0.25", "run": 3, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.25", "run": 3, "seed": 5, "status": "censored", "reason": "factory scale C_K=e^53.5 exceeds work limit (band 69)", "wall": 6.511399988085032e-05, "calls": {"race_trial": 1}, "peak_rss_mb": 667.53125}
+{"config": "ou_bridge_T0.25", "run": 4, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.25", "run": 4, "seed": 5, "status": "censored", "reason": "factory scale C_K=e^8.8 exceeds work limit (band 10)", "wall": 20.854769749999832, "calls": {"race_trial": 9, "membership_refine": 542, "factory_coin": 58}, "peak_rss_mb": 667.53125}
+{"config": "ou_bridge_T0.25", "run": 5, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.25", "run": 5, "seed": 5, "status": "censored", "reason": "time budget 60s exceeded", "wall": 61.30223610499979, "calls": {"race_trial": 3, "factory_coin": 303, "membership_refine": 1984, "final_refine": 2}, "peak_rss_mb": 667.53125}
+{"config": "ou_bridge_T0.25", "run": 6, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.25", "run": 6, "seed": 5, "status": "censored", "reason": "factory scale C_K=e^11.4 exceeds work limit (band 13)", "wall": 17.063453972999923, "calls": {"race_trial": 5, "membership_refine": 516, "factory_coin": 60}, "peak_rss_mb": 667.53125}
+{"config": "ou_bridge_T0.25", "run": 7, "status": "started", "seed": 5}
+{"config": "ou_bridge_T0.25", "run": 7, "seed": 5, "status": "censored", "reason": "refinement level 20 exceeds MAX_LEVEL=19", "wall": 56.30345766299979, "calls": {"race_trial": 5, "factory_coin": 212, "membership_refine": 1561, "final_refine": 16}, "peak_rss_mb": 667.53125}

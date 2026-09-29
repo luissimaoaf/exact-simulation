@@ -9,6 +9,7 @@ an implementation of Papers 1-2.
 """
 from __future__ import annotations
 
+import math
 from dataclasses import dataclass
 from typing import Sequence
 
@@ -41,6 +42,17 @@ def g(x, tol: float = 1e-14):
             z = zn
             break
         z = zn
+    return z
+
+
+def g_scalar(x: float) -> float:
+    """Scalar Newton inverse of f (fast path used inside ODE loops)."""
+    z = x
+    for _ in range(60):
+        dz = (z + 0.5 * math.sin(z) - x) / (1.0 + 0.5 * math.cos(z))
+        z -= dz
+        if abs(dz) < 1e-15:
+            break
     return z
 
 

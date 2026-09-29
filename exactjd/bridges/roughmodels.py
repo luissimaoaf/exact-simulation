@@ -107,7 +107,36 @@ class SymbolicRoughModel:
 
 
 # ---------------------------------------------------------------------------------------------------- nonlinear
+class _NonlinearFast(SymbolicRoughModel):
+    """Same model; numeric V, F, a use scalar closed forms (sympy is kept for the interval bounds only)."""
+
+    def V(self, x):
+        q = 1.0 + 0.5 * math.cos(nl.g_scalar(float(x[0])))
+        c, s = math.cos(x[1]), math.sin(x[1])
+        return np.array([[q * c, -q * s], [s, c]])
+
+    def F(self, x):
+        return np.array([0.5 * (1.0 + 0.5 * math.cos(nl.g_scalar(float(x[0])))), 0.0])
+
+    def a(self, x):
+        q = 1.0 + 0.5 * math.cos(nl.g_scalar(float(x[0])))
+        return np.array([[q * q, 0.0], [0.0, 1.0]])
+
+
+_NL_PROTO: list = []
+_HESTON_PROTO: dict = {}
+
+
 def NonlinearRoughModel() -> SymbolicRoughModel:
+    """Cached symbolic prototype (building the sympy derivative tree takes ~10 s); callers get a shallow copy so that
+    `bind(v,T)` state is private while the compiled interval functions and their caches are shared."""
+    import copy
+    if not _NL_PROTO:
+        _NL_PROTO.append(_build_nonlinear())
+    return copy.copy(_NL_PROTO[0])
+
+
+def _build_nonlinear() -> SymbolicRoughModel:
     z, x2 = sp.symbols("z x2", real=True)
     fp = 1 + sp.cos(z) / 2
     q = fp                                    # q(x1)=f'(g(x1)) = 1 + cos(z)/2  with z=g(x1)
@@ -116,13 +145,21 @@ def NonlinearRoughModel() -> SymbolicRoughModel:
     F = [q / 2, sp.Integer(0)]
     a = [[q**2, 0], [0, 1]]
     ops = [lambda e: sp.diff(e, z) / fp, lambda e: sp.diff(e, x2)]
-    return SymbolicRoughModel([z, x2], [V1, V2], F, a, ops,
+    return _NonlinearFast([z, x2], [V1, V2], F, a, ops,
                               to_vars=lambda x: (float(nl.g(x[0])), float(x[1])),
                               box_vars=lambda lo, hi: ([float(nl.g(lo[0])), lo[1]], [float(nl.g(hi[0])), hi[1]]))
 
 
 # ---------------------------------------------------------------------------------------------------- Heston
 def HestonRoughModel(kappa: float, theta: float, xi: float, rho: float, r: float = 0.0) -> SymbolicRoughModel:
+    import copy
+    key = (kappa, theta, xi, rho, r)
+    if key not in _HESTON_PROTO:
+        _HESTON_PROTO[key] = _build_heston(kappa, theta, xi, rho, r)
+    return copy.copy(_HESTON_PROTO[key])
+
+
+def _build_heston(kappa, theta, xi, rho, r) -> SymbolicRoughModel:
     p = sp.Symbol("p", real=True)
     zz = sp.Symbol("z", positive=True)
     c = math.sqrt(1 - rho**2)

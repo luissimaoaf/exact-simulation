@@ -92,13 +92,15 @@ class AdditiveGuidedBridge:
 
     def __init__(self, model: AdditiveModel, u, v, T: float, rng: np.random.Generator,
                  q_pin: float = 0.45, cut_extra: int = 10, substeps: int = 1, estimate_solver: bool = True, fast: bool = True,
-                 budget: Budget = NULL_BUDGET):
+                 certification: str = "certified", calib: float = 0.1, budget: Budget = NULL_BUDGET):
         assert 0 < q_pin < 0.5
         self.model, self.T = model, float(T)
         self.u, self.v = np.asarray(u, float), np.asarray(v, float)
         self.q_pin, self.cut_extra, self.substeps = q_pin, cut_extra, substeps
         self.estimate_solver = estimate_solver
         self.fast = fast
+        assert certification in ("certified", "diagnostic")
+        self.certification, self.calib = certification, calib
         self.budget = budget
         self.record = BrownianRecord(T, model.m, rng, a=np.zeros(model.m), b=np.zeros(model.m))   # bridge 0->0
         self._cache: dict = {}
@@ -151,10 +153,11 @@ class AdditiveGuidedBridge:
         """Rigorous bound of |int_{T-h}^T G(t,X°_t) dt| for G=-b^T S (x-v)/(T-t) (constant covariance):
         |G| <= supb ‖S‖ M (T-t)^{q_pin-1}  =>  supb ‖S‖ M h^{q_pin}/q_pin   (Paper 2 eq. (45))."""
         m = self.model
+        h = self.T * 2.0 ** (-q)
         M = self.pinning_constant(n, q)
         supb = m.B0 + m.L * self.state_bound(n)
-        h = self.T * 2.0 ** (-q)
-        return supb * m.S_norm * M * h ** self.q_pin / self.q_pin
+        val = supb * m.S_norm * M * h ** self.q_pin / self.q_pin
+        return val if self.certification == "certified" else self.calib * val
 
     # ---------------------------------------------------------------- numerical center
     def _solve_center(self, n: int, q: int, sub: int) -> tuple[np.ndarray, np.ndarray]:
@@ -302,14 +305,21 @@ class AdditiveGuidedBridge:
             else:
                 e_solver = 0.0
         h = T * 2.0 ** (-q)
+        times = np.concatenate([tt, [T]])
+        vals = np.vstack([Xc, self.v[None, :]])
         M = self.pinning_constant(n, q)
         e_tail = 2.0 * M * h ** self.q_pin
         e_drv = self.driver_radius(n)
-        times = np.concatenate([tt, [T]])
-        vals = np.vstack([Xc, self.v[None, :]])
+        if self.certification == "certified":
+            status = "certified (ideal arithmetic; solver error estimated)"
+        else:
+            # UNCERTIFIED diagnostic: the certified formulas x calibration factor (the certificate is ~10-30x
+            # conservative; monotone in n).  Flagged in every output; never used for exactness claims.
+            e_drv, e_tail = self.calib * e_drv, self.calib * e_tail
+            status = "diagnostic-UNCERTIFIED (calibrated certificate)"
         radius = e_drv + e_solver + e_tail
         enc = Enclosure(times, vals, radius, dict(driver=e_drv, solver=e_solver, terminal=e_tail, h=h, M=M,
-                                                  pre=e_drv + e_solver), n)
+                                                  pre=e_drv + e_solver, status=status), n)
         self._cache[key] = enc
         return enc
 

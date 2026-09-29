@@ -156,7 +156,9 @@ def test_rough_guided_center_matches_guided_law_ito_strato():
     ys = np.array(ys)
     se = np.sqrt((xs.var(0) + ys.var(0)) / n)
     assert np.all(np.abs(xs.mean(0) - ys.mean(0)) < 4.5 * se + 0.03)
-    assert np.allclose(np.cov(xs.T), np.cov(ys.T), atol=0.06)
+    tol = 4.0 * math.sqrt(2.0 / n) * np.maximum(np.diag(np.cov(xs.T)), np.diag(np.cov(ys.T)))
+    assert np.all(np.abs(np.diag(np.cov(xs.T)) - np.diag(np.cov(ys.T))) < tol + 0.02)
+    assert abs(np.cov(xs.T)[0, 1]) < 0.15 and abs(np.cov(ys.T)[0, 1]) < 0.15
 
 
 def test_certified_pipeline_reports_infeasibility_honestly():

@@ -1,0 +1,40 @@
+{"config": "race_lognormal_log_envelope", "run": 0, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 0, "seed": 11, "status": "completed", "result": {"R": -0.7587622781148429, "trials": 27, "mem_coins": 18055, "factory_coins": 18055, "max_log_C": 6.304688639964647, "band": -1, "finals": 1}, "wall": 0.21144366699991224, "calls": {"race_trial": 27, "factory_coin": 18036, "membership_refine": 18319, "final_refine": 4}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 1, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 1, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^18.1 exceeds work limit (band 21)", "wall": 5.8834288709995235, "calls": {"race_trial": 13, "factory_coin": 764688, "membership_refine": 764718}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 2, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 2, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^25.8 exceeds work limit (band 31)", "wall": 0.0009332660001746262, "calls": {"race_trial": 5, "factory_coin": 76, "membership_refine": 92}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 3, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 3, "seed": 11, "status": "completed", "result": {"R": -1.5925566254768437, "trials": 74, "mem_coins": 48390, "factory_coins": 48390, "max_log_C": 8.165440980679653, "band": 0, "finals": 1}, "wall": 0.4580108919999475, "calls": {"race_trial": 74, "membership_refine": 48458, "factory_coin": 48337, "final_refine": 3}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 4, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 4, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^14.1 exceeds work limit (band 16)", "wall": 3.203806361999341, "calls": {"race_trial": 23, "membership_refine": 420904, "factory_coin": 420858}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 5, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 5, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^68.1 exceeds work limit (band 89)", "wall": 1.017784075000236, "calls": {"race_trial": 40, "membership_refine": 142674, "factory_coin": 142607}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 6, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 6, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^11.6 exceeds work limit (band 13)", "wall": 3.51310000041849e-05, "calls": {"race_trial": 1}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 7, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 7, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^21.2 exceeds work limit (band 25)", "wall": 0.003705856000124186, "calls": {"race_trial": 15, "membership_refine": 503, "factory_coin": 479}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 8, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 8, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^60.2 exceeds work limit (band 78)", "wall": 7.449500026268652e-05, "calls": {"race_trial": 4, "membership_refine": 5}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 9, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 9, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^135.4 exceeds work limit (band 184)", "wall": 0.08572987400020793, "calls": {"race_trial": 14, "membership_refine": 11866, "factory_coin": 11848}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 10, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 10, "seed": 11, "status": "completed", "result": {"R": -2.6702042805794513, "trials": 1, "mem_coins": 16, "factory_coins": 16, "max_log_C": 0.6053605156578263, "band": 2, "finals": 1}, "wall": 0.0004542779997791513, "calls": {"race_trial": 1, "factory_coin": 16, "membership_refine": 20, "final_refine": 5}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 11, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 11, "seed": 11, "status": "completed", "result": {"R": -0.947689038129627, "trials": 6, "mem_coins": 13687, "factory_coins": 13687, "max_log_C": 7.249150248805498, "band": -1, "finals": 1}, "wall": 0.09925716899942927, "calls": {"race_trial": 6, "factory_coin": 13685, "membership_refine": 13691, "final_refine": 3}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 12, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 12, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^10.8 exceeds work limit (band 12)", "wall": 0.006405287999768916, "calls": {"race_trial": 16, "membership_refine": 867, "factory_coin": 845, "final_refine": 3}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 13, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 13, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^159.3 exceeds work limit (band 218)", "wall": 0.0004935870001645526, "calls": {"race_trial": 7, "membership_refine": 43, "factory_coin": 32}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 14, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 14, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^55.9 exceeds work limit (band 72)", "wall": 0.002173711000068579, "calls": {"race_trial": 8, "membership_refine": 284, "factory_coin": 273}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 15, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 15, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^11.6 exceeds work limit (band 13)", "wall": 0.0009515620004094671, "calls": {"race_trial": 7, "membership_refine": 86, "factory_coin": 76}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 16, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 16, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^34.0 exceeds work limit (band 42)", "wall": 7.302199992409442e-05, "calls": {"race_trial": 5, "membership_refine": 5}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 17, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 17, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^106.5 exceeds work limit (band 143)", "wall": 0.0007583619999422808, "calls": {"race_trial": 2, "factory_coin": 60, "membership_refine": 61}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 18, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 18, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^22.0 exceeds work limit (band 26)", "wall": 0.0032287130006807274, "calls": {"race_trial": 36, "membership_refine": 394, "factory_coin": 296, "final_refine": 2}, "peak_rss_mb": 397.87109375}
+{"config": "race_lognormal_log_envelope", "run": 19, "status": "started", "seed": 11}
+{"config": "race_lognormal_log_envelope", "run": 19, "seed": 11, "status": "censored", "reason": "factory scale C_K=e^24.3 exceeds work limit (band 29)", "wall": 2.2188000002643093e-05, "calls": {"race_trial": 1}, "peak_rss_mb": 397.87109375}
