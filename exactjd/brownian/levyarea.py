@@ -99,15 +99,18 @@ class BrownianAreaRecord(BrownianRecord):
         self._nodes.append(new)
 
     # ------------------------------------------------------------------ bounds beyond revealed levels
+    def _Mbar_unrevealed(self, kk: np.ndarray) -> np.ndarray:
+        """|xi_i| <= sqrt(e^2+xip^2) <= tau sqrt(k+1) for unrevealed levels (tail-first thresholds)."""
+        return self.t[kk - 1] * np.sqrt(kk + 1.0)
+
     def Mbar(self, k: int) -> float:
-        if k <= self.Kstar:
+        if k <= len(self._M):
             return self._M[k - 1]
-        tau = float(self.t[k - 1])
-        return tau * math.sqrt(k + 1.0)      # |xi_i| <= sqrt(e^2+xip^2) <= tau sqrt(k+1)
+        return float(self.t[k - 1] * math.sqrt(k + 1.0))
 
     def Ubar(self, k: int) -> float:
-        """Certified bound on max |eta| at level k."""
-        return self._U[k - 1] if k <= self.Kstar else float(self.t[k - 1])
+        """Certified bound on max |eta| at level k (realised if revealed, threshold otherwise)."""
+        return self._U[k - 1] if k <= len(self._U) else float(self.t[k - 1])
 
     # ------------------------------------------------------------------ Levy-area certificates
     def _A(self, k: int, abar: float, H1: float) -> float:

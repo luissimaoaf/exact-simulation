@@ -91,3 +91,85 @@ def ou_endpoint_data(ou, T: float, u, v) -> dict:
     diff = np.asarray(v, float) - mu
     p = (2 * math.pi) ** (-d / 2) * np.linalg.det(Q) ** -0.5 * math.exp(-0.5 * diff @ np.linalg.solve(Q, diff))
     return dict(p=p, Z=p / p0_tilde(T, u, v, ou.a), theta_uT=mu)
+
+
+# ---------------------------------------------------------------------------------------------------------------
+# Tight OU certificate (model-specific, deterministic; float quadrature)
+# ---------------------------------------------------------------------------------------------------------------
+def _graded_nodes(T: float, panels: int = 34, ngl: int = 8):
+    """Composite Gauss-Legendre on [0,T] with geometric panels toward T: [T(1-2^-j), T(1-2^-(j+1))]."""
+    xg, wg = np.polynomial.legendre.leggauss(ngl)
+    xg, wg = 0.5 * (xg + 1), 0.5 * wg
+    t, w = [], []
+    for j in range(panels):
+        a, b = T * (1 - 2.0 ** -j), T * (1 - 2.0 ** -(j + 1))
+        t.append(a + (b - a) * xg)
+        w.append((b - a) * wg)
+    return np.concatenate(t), np.concatenate(w)
+
+
+def ou_bridge_J_second_moment(ou, T: float, u, v, panels: int = 34) -> dict:
+    """E_P[J^2] and E_P[J] for the OU target bridge, J=int_0^T G(t,X_t)dt, G=-(BX+c)^T S (X-v)/(T-t).
+
+    G is a quadratic form in the Gaussian bridge; E[G(s)G(t)] via Isserlis/Wick.  Quadrature error and the neglected
+    last panel (length T 2^-panels, integrand ~ tau^{-1/2}) are NOT interval-certified."""
+    from scipy.linalg import expm
+    d = ou.d
+    u, v = np.asarray(u, float), np.asarray(v, float)
+    t, w = _graded_nodes(T, panels)
+    N = len(t)
+    S = np.linalg.inv(ou.a)
+    M = ou.B.T @ S
+    Ms = 0.5 * (M + M.T)
+    wv = S @ ou.c - ou.B.T @ S @ v
+    kappa = -float(ou.c @ S @ v)
+    # unconditional OU moments
+    par = [ou.transition_params(float(ti)) for ti in t]
+    m = np.array([A @ u + m0 for A, m0, Q in par])
+    Sig = np.array([Q for A, m0, Q in par])
+    lam, V = np.linalg.eig(ou.B)
+    Vi = np.linalg.inv(V)
+
+    def Aexp(h):   # e^{B h} vectorised over array h
+        E = np.einsum("ij,nj,jk->nik", V, np.exp(np.multiply.outer(h, lam)), Vi)
+        return E.real
+
+    AT = Aexp(T - t)                                        # e^{B(T-t)}
+    _, m0T, QT = ou.transition_params(T)
+    AT_full, _, _ = ou.transition_params(T)
+    mT = AT_full @ u + m0T
+    K_iT = np.einsum("nij,nkj->nik", Sig, AT)               # Cov(X_t,X_T)=Sig_t A(T-t)^T
+    QTi = np.linalg.inv(QT)
+    mu = m + np.einsum("nij,jk,k->ni", K_iT, QTi, v - mT)   # bridge mean
+    # bridge covariance blocks C_ij (i<=j uses Sig_i A(t_j-t_i)^T)
+    ii, jj = np.triu_indices(N)
+    Aij = Aexp(t[jj] - t[ii])
+    Kij = np.einsum("nab,ncb->nac", Sig[ii], Aij)           # Cov(X_i,X_j)
+    Cij = Kij - np.einsum("nab,bc,ndc->nad", K_iT[ii], QTi, K_iT[jj])
+    C = np.zeros((N, N, d, d))
+    C[ii, jj] = Cij
+    C[jj, ii] = np.transpose(Cij, (0, 2, 1))
+    Cii = np.array([C[i, i] for i in range(N)])
+    tau = T - t
+    g = wv[None, :] + 2 * mu @ Ms.T
+    h = np.einsum("ni,ij,nj->n", mu, Ms, mu) + mu @ wv + kappa
+    trM = np.einsum("ab,nba->n", Ms, Cii)
+    EqEq = (np.outer(h, h) + np.outer(h, trM) + np.outer(trM, h)
+            + np.einsum("ia,ijab,jb->ij", g, C, g)
+            + np.outer(trM, trM)
+            + 2 * np.einsum("ab,ijbc,cd,ijad->ij", Ms, C, Ms, C, optimize=True))
+    # note last term: tr(Ms C_ij Ms C_ji), C_ji = C_ij^T
+    EG2 = EqEq / np.outer(tau, tau)
+    Eq = (h + trM) / tau
+    EJ = float(np.sum(w * (-Eq)))
+    EJ2 = float(w @ EG2 @ w)
+    return dict(EJ=EJ, EJ2=EJ2)
+
+
+def ou_tight_certificate(ou, T: float, u, v, safety: float = 1.05) -> dict:
+    """M_c = safety * Z (1+sqrt(E_P J^2))^2 >= E_Q[Psi (1+log+ Psi)^2]  (identity E_Q[Psi f(J)]=Z E_P f(J) and
+    (1+|J|)^2, Cauchy-Schwarz).  Deterministic from model constants; numerical quadrature (not interval-certified)."""
+    ed = ou_endpoint_data(ou, T, u, v)
+    mm = ou_bridge_J_second_moment(ou, T, u, v)
+    Mc = safety * ed["Z"] * (1 + math.sqrt(max(mm["EJ2"], 0.0))) ** 2
+    return dict(M_c=Mc, Z=ed["Z"], EJ2=mm["EJ2"], EJ=mm["EJ"])

@@ -4,22 +4,24 @@ Covariance-matched guide (a=Sigma Sigma^T constant so A=a a_T^{-1}=I):
         dX = (b(t,X) - (X-v)/(T-t)) dt + Sigma dW,            X_0=u, X_T=v.
 Volterra form (variation of constants):
         X_t = l_t + B_t + (T-t) int_0^t b(s,X_s)/(T-s) ds,     l_t=u+(v-u)t/T,  B_t=Sigma beta_t,
-with beta a standard m-dim Brownian bridge on [0,T] (same law as (T-t)int dW/(T-s)).  Weighted stability
-(b Lipschitz, constant L):
-        sup_t |X_t-X~_t|/(T-t)^gamma <= e^{L T} ||B-B~||_gamma       (0<=gamma<=1),
-so  ||X-X~||_inf <= T^gamma e^{LT} ||B - B~||_gamma.   Only the retained Brownian-bridge record is needed; no
-Levy area, no alpha>1/3 restriction.
+with beta a standard m-dim Brownian bridge on [0,T] (same law as (T-t)int dW/(T-s)).
+
+Stability.  Because the kernel (T-t)/(T-s) <= 1 and b is L-Lipschitz, plain Gronwall gives
+        sup_t |X_t - X~_t| <= e^{L T} ‖B - B~‖_inf                (no weights, no Levy area, no alpha>1/3),
+which is the alpha->0 case of Paper 1's weighted estimate  ‖X-X~‖_gamma <= e^{LT}‖B-B~‖_gamma.
 
 Error decomposition returned separately (Paper 1 Remark 7.2):
-  driver   : rigorous (ideal arithmetic) from the tail-first certificate of the bridge record;
-  solver   : numerical error of the RK4 solve of the polygonal-driver Volterra equation  -- ESTIMATED by step
+  driver   : e^{LT}‖Sigma‖ r_n, r_n the tail-first certified sup-error of the retained bridge polygon (rigorous in
+             ideal arithmetic);
+  solver   : error of the RK4 solve of the polygonal-driver Volterra equation on [0,T-h] -- ESTIMATED by step
              doubling (NOT certified; documented weakening of the interval verifier);
-  terminal : rigorous bound of the splice on [T-h,T] from sup|b| (Gronwall) and Holder pinning.
+  terminal : 2 M h^q (pinning modulus of the latent path, computed from the actual last-cell nodes and tail-first
+             per-level hat bounds) -- rigorous in ideal arithmetic (Paper 1 Alg. 1: E=E_pre+2M h^alpha).
 """
 from __future__ import annotations
 
 import math
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable
 
 import numpy as np
@@ -52,10 +54,11 @@ class AdditiveModel:
         m._ou = ou
         return m
 
-    # enclosure of G(t,x) = -b(t,x)^T S (x-v)/(T-t) over t in [t0,t1], |x-xc|<=r   (OU: b affine)
     def G_enclosure(self, t0, t1, xc, r, v, T) -> tuple[float, float]:
+        """Enclosure of G(t,x) = -b(t,x)^T S (x-v)/(T-t) over t in [t0,t1], |x-xc|<=r (b time-independent,
+        Lipschitz L): |G-G(xc)| <= (1/tau)[L‖S‖|y|r + |b(xc)|‖S‖r + L‖S‖ r^2]."""
         tau_lo, tau_hi = T - t1, T - t0
-        bc = self.b(0.5 * (t0 + t1), xc)      # b time-independent for OU; general b needs time modulus
+        bc = self.b(0.5 * (t0 + t1), xc)
         y = xc - v
         core = -float(bc @ self.S @ y)
         dev = (self.L * self.S_norm * np.linalg.norm(y) * r + np.linalg.norm(bc) * self.S_norm * r
@@ -80,7 +83,7 @@ class Enclosure:
         return np.stack([np.interp(t, self.times, self.values[:, j]) for j in range(self.values.shape[1])], axis=-1)
 
     def sup_norm_interval(self) -> tuple[float, float]:
-        nrm = np.linalg.norm(self.values, axis=1)   # polygon: sup at vertices
+        nrm = np.linalg.norm(self.values, axis=1)   # polygon: norm maximised at vertices
         return max(nrm.max() - self.radius, 0.0), nrm.max() + self.radius
 
 
@@ -88,31 +91,22 @@ class AdditiveGuidedBridge:
     """Retained latent guided bridge X° ~ Q^{u,v} (additive noise) with nested certified enclosures."""
 
     def __init__(self, model: AdditiveModel, u, v, T: float, rng: np.random.Generator,
-                 abar: float = 0.45, gamma: float = 0.30, q_pin: float = 0.4, substeps: int = 2,
+                 q_pin: float = 0.45, cut_extra: int = 10, substeps: int = 1, estimate_solver: bool = True, fast: bool = True,
                  budget: Budget = NULL_BUDGET):
-        assert gamma < abar <= 0.5 and q_pin <= abar
+        assert 0 < q_pin < 0.5
         self.model, self.T = model, float(T)
         self.u, self.v = np.asarray(u, float), np.asarray(v, float)
-        self.abar, self.gamma, self.q_pin, self.substeps = abar, gamma, q_pin, substeps
+        self.q_pin, self.cut_extra, self.substeps = q_pin, cut_extra, substeps
+        self.estimate_solver = estimate_solver
+        self.fast = fast
         self.budget = budget
         self.record = BrownianRecord(T, model.m, rng, a=np.zeros(model.m), b=np.zeros(model.m))   # bridge 0->0
         self._cache: dict = {}
-        self._Hb = None
 
-    # ---------------------------------------------------------------- certified driver quantities
-    def hb(self) -> float:
-        if self._Hb is None:
-            self._Hb = self.record.holder_constant(self.abar)
-        return self._Hb
-
-    def driver_weighted_norm(self, n: int) -> float:
-        """Certified ||beta-beta~_n||_gamma (sup |diff|/(T-t)^gamma)."""
-        hn = self.T * 2.0 ** (-n)
-        return max(self.record.radius(n) * hn ** (-self.gamma), 2.0 * self.hb() * hn ** (self.abar - self.gamma))
-
+    # ---------------------------------------------------------------- certified quantities
     def driver_radius(self, n: int) -> float:
         m = self.model
-        return self.T ** self.gamma * math.exp(m.L * self.T) * m.sig_norm * self.driver_weighted_norm(n)
+        return math.exp(m.L * self.T) * m.sig_norm * self.record.radius(n)
 
     def state_bound(self, n: int) -> float:
         """Rigorous sup|X°| (Gronwall for the Volterra equation; kernel <=1)."""
@@ -122,40 +116,72 @@ class AdditiveGuidedBridge:
         K0 = max(np.linalg.norm(self.u), np.linalg.norm(self.v)) + m.sig_norm * sup_beta
         return (K0 + m.B0 * self.T) * math.exp(m.L * self.T)
 
-    def pinning_constant(self, n: int) -> tuple[float, float]:
-        """(M,q): |X°_t - v| <= M (T-t)^q for all t<T  (rigorous, see module doc)."""
-        m, T, q = self.model, self.T, self.q_pin
+    def pinning_constant(self, n: int, q: int) -> float:
+        """M with |X°_t - v| <= M (T-t)^{q_pin} on [T-h,T), h=T 2^-q, q<=n.
+
+        X_t - v = (T-t)[(u-v)/T + int_0^t b/(T-s) ds] + Sigma beta_t and
+        |beta_t| <= |beta~_n(t)| + endpoint_modulus(T-t, n)   (per-level hat bounds, tail-first thresholds)."""
+        m, T, qp = self.model, self.T, self.q_pin
+        h, hn = T * 2.0 ** (-q), T * 2.0 ** (-n)
+        beta = self.record.nodes(n)
+        norms = np.linalg.norm(beta, axis=1)
+        N = 2 ** n
+        poly = 0.0
+        if q <= n:
+            j0 = N - 2 ** (n - q)
+            js = np.arange(j0, N - 1)
+            if len(js):
+                smin = T - (js + 1) * hn
+                poly = float(np.max(np.maximum(norms[js], norms[js + 1]) / smin**qp))
+            poly = max(poly, float(norms[N - 1] * hn ** (1 - qp) / hn))     # last cell: linear to 0 at T
+        else:
+            poly = float(norms[N - 1] * h ** (1 - qp) / hn)                  # cutoff inside the last cell
+        # hat-tail part, breakpoints s = h 2^-j
+        om = 0.0
+        for j in range(0, 200):
+            s = h * 2.0 ** (-j)
+            om = max(om, self.record.endpoint_modulus(s, n) / s**qp)
         supb = m.B0 + m.L * self.state_bound(n)
-        M = (np.linalg.norm(self.u - self.v) * T ** (-q) + m.sig_norm * self.hb() * T ** (self.abar - q)
-             + supb * T ** (1 - q) / (math.e * (1 - q)))
-        return float(M), q
+        smax_term = max(h ** (1 - qp) * math.log(max(T / h, math.e)) if h < T * math.exp(-1 / (1 - qp)) else
+                        max((h * 2.0 ** (-j)) ** (1 - qp) * math.log(T / (h * 2.0 ** (-j))) for j in range(0, 200)), 0.0)
+        return float(np.linalg.norm(self.u - self.v) / T * h ** (1 - qp) + supb * smax_term
+                     + m.sig_norm * (poly + om))
 
     def tail_integral_bound(self, n: int, q: int) -> float:
-        """Rigorous bound of |int_{T-h}^T G(t,X°_t) dt|, h=T2^-q, for G=-b^T S (x-v)/(T-t):
-        |G| <= supb ‖S‖ M (T-t)^{q_pin-1}  =>  supb ‖S‖ M h^{q_pin}/q_pin   (Paper 2 eq. (45), constant covariance)."""
+        """Rigorous bound of |int_{T-h}^T G(t,X°_t) dt| for G=-b^T S (x-v)/(T-t) (constant covariance):
+        |G| <= supb ‖S‖ M (T-t)^{q_pin-1}  =>  supb ‖S‖ M h^{q_pin}/q_pin   (Paper 2 eq. (45))."""
         m = self.model
-        M, qq = self.pinning_constant(n)
+        M = self.pinning_constant(n, q)
         supb = m.B0 + m.L * self.state_bound(n)
         h = self.T * 2.0 ** (-q)
-        return supb * m.S_norm * M * h ** qq / qq
+        return supb * m.S_norm * M * h ** self.q_pin / self.q_pin
 
     # ---------------------------------------------------------------- numerical center
     def _solve_center(self, n: int, q: int, sub: int) -> tuple[np.ndarray, np.ndarray]:
-        """RK4 for Y'=b(t,l_t+B~_t+(T-t)Y)/(T-t) on grid nodes of level n up to T-h_q; returns times, X~ values."""
+        """RK4 for Y'=b(t,l_t+B~_t+(T-t)Y)/(T-t) on nodes of level n up to T-h_q; returns times, X~ values."""
         m, T = self.model, self.T
-        beta = self.record.nodes(n)                    # polygon of the bridge, (2^n+1, m)
-        Bp = beta @ m.Sigma.T                          # (2^n+1, d)
+        beta = self.record.nodes(n)
+        Bp = beta @ m.Sigma.T
         N = 2 ** n
-        Nend = N - 2 ** (n - q)                        # last node index (time T - T 2^-q)
+        Nend = N - 2 ** (n - q) if q <= n else N - 1
         ts = np.linspace(0.0, T, N + 1)
-        ell = lambda t: self.u + (self.v - self.u) * t / T
+        u, v = self.u, self.v
         Y = np.zeros(m.d)
-        Xs = [self.u.copy()]
-        tt = [0.0]
+        Xs = np.empty((Nend + 1, m.d))
+        Xs[0] = u
+        b = m.b
 
         def rhs(t, Y, Bt):
-            x = ell(t) + Bt + (T - t) * Y
-            return m.b(t, x) / (T - t)
+            return b(t, u + (v - u) * t / T + Bt + (T - t) * Y) / (T - t)
+
+        def rk4(ta, dt, Y, Ba, slope):
+            Bm = Ba + slope * dt / 2
+            Bb = Ba + slope * dt
+            k1 = rhs(ta, Y, Ba)
+            k2 = rhs(ta + dt / 2, Y + dt / 2 * k1, Bm)
+            k3 = rhs(ta + dt / 2, Y + dt / 2 * k2, Bm)
+            k4 = rhs(ta + dt, Y + dt * k3, Bb)
+            return Y + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
 
         for i in range(Nend):
             t0, t1 = ts[i], ts[i + 1]
@@ -163,40 +189,127 @@ class AdditiveGuidedBridge:
             slope = (Bp[i + 1] - Bp[i]) / (t1 - t0)
             for s in range(sub):
                 ta = t0 + s * dt
-                Ba = Bp[i] + slope * (ta - t0)
-                Bm = Ba + slope * dt / 2
-                Bb = Ba + slope * dt
-                k1 = rhs(ta, Y, Ba)
-                k2 = rhs(ta + dt / 2, Y + dt / 2 * k1, Bm)
-                k3 = rhs(ta + dt / 2, Y + dt / 2 * k2, Bm)
-                k4 = rhs(ta + dt, Y + dt * k3, Bb)
-                Y = Y + dt / 6 * (k1 + 2 * k2 + 2 * k3 + k4)
-                self.budget.tick("rk4_step")
-            t = ts[i + 1]
-            Xs.append(ell(t) + Bp[i + 1] + (T - t) * Y)
-            tt.append(t)
-        return np.array(tt), np.array(Xs)
+                Y = rk4(ta, dt, Y, Bp[i] + slope * (ta - t0), slope)
+            self.budget.tick("rk4_cell")
+            Xs[i + 1] = u + (v - u) * t1 / T + Bp[i + 1] + (T - t1) * Y
+        tt = list(ts[: Nend + 1])
+        if q > n:                                       # geometric grid inside the last polygon cell
+            hn = T * 2.0 ** (-n)
+            hcut = T * 2.0 ** (-q)
+            slope = (Bp[N] - Bp[N - 1]) / hn
+            sc = T - ts[N - 1]
+            ratio = 0.8 ** (1.0 / sub)
+            extra_t, extra_X = [], []
+            while sc > hcut * (1 + 1e-9):
+                sN = max(sc * ratio, hcut)
+                dt = sc - sN
+                t = T - sc
+                Y = rk4(t, dt, Y, Bp[N - 1] + slope * (t - ts[N - 1]), slope)
+                sc = sN
+                t = T - sc
+                extra_t.append(t)
+                extra_X.append(u + (v - u) * t / T + (Bp[N - 1] + slope * (t - ts[N - 1])) + sc * Y)
+                self.budget.tick("rk4_cell")
+            tt += extra_t
+            Xs = np.vstack([Xs] + [np.array(extra_X)]) if extra_X else Xs
+        return np.array(tt), Xs
+
+
+    # ---------------------------------------------------------------- fast exact-affine center (linear b)
+    def _solve_center_linear(self, n: int, q: int, ngl: int) -> tuple[np.ndarray, np.ndarray]:
+        """Same center as `_solve_center` for b(t,x)=Bx+c, via cellwise affine maps (Y'=BY+F(t), F rational-linear):
+        Y_{i+1}=e^{BD}Y_i+g_i, g_i by Gauss-Legendre (ngl nodes) vectorised over cells; the recurrence with the common
+        matrix e^{BD} is solved in the eigenbasis with scipy lfilter.  Geometric substeps inside the last cell."""
+        from scipy.linalg import expm
+        from scipy.signal import lfilter
+        ou = self.model._ou
+        Bm, cc = ou.B, ou.c
+        m, T = self.model, self.T
+        Bp = self.record.nodes(n) @ m.Sigma.T
+        N = 2 ** n
+        Nend = N - 2 ** (n - q) if q <= n else N - 1
+        hn = T / N
+        xg, wg = np.polynomial.legendre.leggauss(ngl)
+        xg, wg = 0.5 * (xg + 1), 0.5 * wg
+        u, v = self.u, self.v
+        ts = np.arange(Nend + 1) * hn
+        # dyadic cells 0..Nend-1
+        t0 = ts[:-1]
+        s = t0[:, None] + hn * xg[None, :]                                    # (Nend, ngl)
+        Bs = Bp[:Nend, None, :] + (Bp[1:Nend + 1] - Bp[:Nend])[:, None, :] * xg[None, :, None]
+        ell = u[None, None, :] + (v - u)[None, None, :] * s[..., None] / T
+        F = (np.einsum("ij,klj->kli", Bm, ell + Bs) + cc) / (T - s)[..., None]
+        E = np.array([expm(Bm * hn * (1 - x)) for x in xg])                   # (ngl,d,d)
+        g = hn * np.einsum("g,gij,kgj->ki", wg, E, F)                         # (Nend, d)
+        Phi = expm(Bm * hn)
+        lam, V = np.linalg.eig(Phi)
+        Vi = np.linalg.inv(V)
+        w = g @ Vi.T                                                           # (Nend,d) complex
+        z = np.stack([lfilter([1.0], [1.0, -lam[j]], w[:, j]) for j in range(m.d)], axis=1)
+        Y = np.vstack([np.zeros((1, m.d)), (z @ V.T).real])                    # Y_0..Y_Nend
+        Bnode = Bp[:Nend + 1]
+        Xs = u[None, :] + (v - u)[None, :] * ts[:, None] / T + Bnode + (T - ts)[:, None] * Y
+        tt = list(ts)
+        if q > n:
+            hcut = T * 2.0 ** (-q)
+            slope = (Bp[N] - Bp[N - 1]) / hn
+            sc = T - ts[Nend]                       # distance to T tracked directly (no cancellation)
+            Yc = Y[-1].copy()
+            ratio = 0.8
+            ex_t, ex_X = [], []
+            while sc > hcut * (1 + 1e-9):
+                sN = max(sc * ratio, hcut)
+                D = sc - sN
+                t = T - sc
+                sg = t + D * xg
+                Bsg = Bp[N - 1][None, :] + slope[None, :] * (sg - ts[Nend])[:, None]
+                Fg = (np.einsum("ij,gj->gi", Bm, u + (v - u) * sg[:, None] / T + Bsg) + cc) / (T - sg)[:, None]
+                Eg = np.array([expm(Bm * D * (1 - x)) for x in xg])
+                gg = D * np.einsum("g,gij,gj->i", wg, Eg, Fg)
+                Yc = expm(Bm * D) @ Yc + gg
+                sc = sN
+                t = T - sc
+                ex_t.append(t)
+                ex_X.append(u + (v - u) * t / T + Bp[N - 1] + slope * (t - ts[Nend]) + sc * Yc)
+            tt += ex_t
+            if ex_X:
+                Xs = np.vstack([Xs, np.array(ex_X)])
+        return np.array(tt), Xs
 
     def enclosure(self, n: int, q: int | None = None) -> Enclosure:
-        """Certified enclosure at driver level n (terminal cutoff h=T 2^-q, default q=n-2... see below)."""
-        q = max(1, n - 3) if q is None else q
+        """Certified enclosure at driver level n (terminal cutoff h=T 2^-q, default q=n+cut_extra)."""
+        q = n + self.cut_extra if q is None else q
         key = (n, q)
         if key in self._cache:
             return self._cache[key]
         m, T = self.model, self.T
-        tt, X1 = self._solve_center(n, q, self.substeps)
-        _, X2 = self._solve_center(n, q, 2 * self.substeps)
-        e_solver = float(np.max(np.linalg.norm(X1 - X2, axis=1))) * (16.0 / 15.0) + 1e-15   # Richardson estimate
-        Xc = X2
+        if getattr(self.model, "_ou", None) is not None and self.fast:
+            tt, Xc = self._solve_center_linear(n, q, 6)
+            if self.estimate_solver:
+                tt2, X2 = self._solve_center_linear(n, q, 10)
+                e_solver = float(max(np.linalg.norm(Xc - X2, axis=1).max(), 0.0)) + 1e-15
+                Xc, tt = X2, tt2
+            else:
+                e_solver = 0.0
+        else:
+            tt, Xc = self._solve_center(n, q, self.substeps)
+            if self.estimate_solver:
+                tt2, X2 = self._solve_center(n, q, 2 * self.substeps)
+                k0 = (2 ** n - 2 ** (n - q) if q <= n else 2 ** n - 1) + 1          # common dyadic nodes
+                diffs = [np.linalg.norm(Xc[:k0] - X2[:k0], axis=1).max(), np.linalg.norm(Xc[-1] - X2[-1])]
+                e_solver = float(max(diffs)) * (16.0 / 15.0) + 1e-15                 # Richardson-type estimate
+                Xc, tt = X2, tt2
+            else:
+                e_solver = 0.0
         h = T * 2.0 ** (-q)
-        # terminal splice: linear to v on [T-h,T]; rigorous bound 2 M h^q  (Paper 1 Alg.1 line E = Epre + 2Mh^alpha)
-        M, qq = self.pinning_constant(n)
-        e_tail = 2.0 * M * h ** qq
+        M = self.pinning_constant(n, q)
+        e_tail = 2.0 * M * h ** self.q_pin
+        e_drv = self.driver_radius(n)
         times = np.concatenate([tt, [T]])
         vals = np.vstack([Xc, self.v[None, :]])
-        e_drv = self.driver_radius(n)
         radius = e_drv + e_solver + e_tail
-        enc = Enclosure(times, vals, radius, dict(driver=e_drv, solver=e_solver, terminal=e_tail, h=h, M=M), n)
+        enc = Enclosure(times, vals, radius, dict(driver=e_drv, solver=e_solver, terminal=e_tail, h=h, M=M,
+                                                  pre=e_drv + e_solver), n)
         self._cache[key] = enc
         return enc
 
@@ -206,6 +319,7 @@ class AdditiveGuidedBridge:
     def refine_to(self, eps: float, n0: int = 4, nmax: int = 22) -> Enclosure:
         """Adaptive refinement (Algorithm 1 analogue): increase the level of the SAME latent path until radius<=eps."""
         n = n0
+        enc = None
         while n <= nmax:
             enc = self.enclosure(n)
             if enc.radius <= eps:

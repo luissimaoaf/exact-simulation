@@ -75,28 +75,38 @@ class BrownianRecord:
 
     # ------------------------------------------------------------------ certified quantities
     def Mbar(self, k: int) -> float:
-        """Certified bound on max |xi coordinate| at level k (realised if revealed <=K*, threshold beyond)."""
-        if k <= self.Kstar:
+        """Certified bound on max |xi coordinate| at level k: realised maximum if the level is revealed
+        (any revealed level, also beyond K*), deterministic tail-first threshold otherwise."""
+        if k <= len(self._M):
             return self._M[k - 1]
         return float(self.t[k - 1])
 
     def delta(self, k: int) -> float:
         return self.h * 2.0 ** (1 - k)
 
+    def _Mvec(self) -> np.ndarray:
+        key = len(self._M)
+        c = getattr(self, "_mv_cache", None)
+        if c is None or c[0] != key:
+            kk = np.arange(1, tf.JMAX + 1)
+            mv = np.array(self.t[:tf.JMAX], float)
+            mv[:key] = self._M[:key]
+            if hasattr(self, "_Mbar_unrevealed"):
+                mv[key:] = self._Mbar_unrevealed(kk[key:])
+            self._mv_cache = (key, mv)
+            c = self._mv_cache
+        return c[1]
+
     def nodes(self, n: int) -> np.ndarray:
         self.ensure(n)
         return self._nodes[n]
 
     def radius(self, n: int) -> float:
-        """Certified ‖W - polygon_n‖∞ (Euclidean norm)."""
+        """Certified ‖W - polygon_n‖∞ (Euclidean norm): sum_{k>n} sqrt(d) (sqrt(delta_k)/2) Mbar_k."""
         n = max(n, 0)
-        s = 0.0
-        for k in range(n + 1, tf.JMAX + 1):
-            term = math.sqrt(self.d) * 0.5 * math.sqrt(self.delta(k)) * self.Mbar(k)
-            s += term
-            if k > self.Kstar + 5 and term < 1e-18 * max(s, 1e-300):
-                break
-        return s
+        kk = np.arange(1, tf.JMAX + 1)
+        terms = math.sqrt(self.d) * 0.5 * np.sqrt(self.h * 2.0 ** (1.0 - kk)) * self._Mvec()
+        return float(terms[n:].sum())
 
     def polygon(self, n: int):
         nodes = self.nodes(n)
@@ -109,16 +119,23 @@ class BrownianRecord:
 
     def increment_bound(self, l: float) -> float:
         """Certified sup over intervals of length l of |W_t - W_s| (Euclidean)."""
+        kk = np.arange(1, tf.JMAX + 1)
+        dk = self.h * 2.0 ** (1.0 - kk)
         tot = np.linalg.norm(self.b - self.a) * min(l / self.h, 1.0)
-        for k in range(1, self.Kstar + 80):
-            dk = self.delta(k)
-            tot += math.sqrt(self.d) * self.Mbar(k) * min(l / math.sqrt(dk), math.sqrt(dk))
-        return tot
+        return float(tot + math.sqrt(self.d) * np.sum(self._Mvec() * np.minimum(l / np.sqrt(dk), np.sqrt(dk))))
 
     def holder_constant(self, alpha: float) -> float:
-        """Certified H with |W_t-W_s| <= H |t-s|^alpha for all s,t in [0,h] (breakpoint scan; see module doc)."""
+        """Certified H with |W_t-W_s| <= H |t-s|^alpha for all s,t in [0,h]  (concave-piecewise-linear increments:
+        sup at the breakpoints l=h 2^-j, j=0..300)."""
         best = 0.0
-        for k in range(0, self.Kstar + 70):
-            l = self.h * 2.0 ** (-k)
+        for j in range(0, 300):
+            l = self.h * 2.0 ** (-j)
             best = max(best, self.increment_bound(l) / l**alpha)
         return best
+
+    def endpoint_modulus(self, s: float, n: int, at_end: bool = True) -> float:
+        """Certified bound on |W_t - polygon_n(t)| at distance s from the END of a *bridge* (both vanish at T):
+        sqrt(d) sum_{k>n} Mbar_k min(s/sqrt(delta_k), sqrt(delta_k)/2)."""
+        kk = np.arange(n + 1, tf.JMAX + 1)
+        dk = self.h * 2.0 ** (1.0 - kk)
+        return float(math.sqrt(self.d) * np.sum(self._Mvec()[n:] * np.minimum(s / np.sqrt(dk), 0.5 * np.sqrt(dk))))
