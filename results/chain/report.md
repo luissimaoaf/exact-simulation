@@ -27,3 +27,5 @@ requested 60, completed 39, censored 21; wall median 3.0s.
 | direct transformed reference | 2000 | +0.166 ± 0.012, +0.060 ± 0.008 | 0.523, 0.350 |
 | guided proposal (uncorrected) | 60 | +0.192 ± 0.068, +0.003 ± 0.049 | 0.526, 0.377 |
 | guided -> Paper 2 correction (diagnostic) | 39 | +0.090 ± 0.093, +0.058 ± 0.065 | 0.580, 0.404 |
+
+Interpretation: differences between the three laws are within about one standard error at these sample sizes, so this pilot has **no power to distinguish** the corrected from the uncorrected proposal; it demonstrates that the chain runs. The completed subset is conditioned on finishing within the work/level limits (censored runs are logged in nonlinear_p2.jsonl) and must not be read as an unbiased exact sample.

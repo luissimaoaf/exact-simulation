@@ -64,7 +64,7 @@ def main(seed: int = 7, eps: float = 0.1, out: str = "results/demo") -> None:
         for e in skel.events:
             axs[0].axvline(e.tau, color="k", lw=0.6, ls=":")
         axs[0].legend(ncol=3, fontsize=8)
-        axs[0].set_title(f"Exact jump skeleton (N_T={skel.n_events}); path = certified eps-strong (radius {p2.radius:.3f})")
+        axs[0].set_title(f"Exact skeleton (N_T={skel.n_events}); eps-strong path, radius {p2.radius:.3f}", fontsize=10)
         lam = [jump.intensity(t, v) for t, v in zip(tt, v2)]
         axs[1].plot(tt, lam, "r")
         axs[1].set_ylabel("$\\lambda(X_t)$ (unbounded)"); axs[1].set_xlabel("t")

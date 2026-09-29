@@ -111,7 +111,9 @@ def test_normaliser_identity_Z_equals_E_Psi():
 def test_layer_certificate_is_finite_and_dominates_exact_moment():
     """Theorem 8.4 constant vs the exact E_Q[Psi(1+log+ Psi)^2] estimated by Monte Carlo (sanity only)."""
     orc = OUGuidedOracle(OU2, U0, V0, T0)
-    cert = orc.layer_certificate()
+    cert = orc.layer_certificate("thm84")
+    tight = orc.layer_certificate("tight")
     assert math.isfinite(cert["M_c"]) and cert["M_c"] > cert["Z_plus"]
+    assert tight["M_c"] < cert["M_c"]
     Z = mom.ou_endpoint_data(OU2, T0, U0, V0)["Z"]
     assert cert["Z_plus"] >= Z            # (53): Z <= Z+

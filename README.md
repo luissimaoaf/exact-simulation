@@ -64,6 +64,21 @@ exact jump skeleton (times, marks, pre/post states, terminal state) and two nest
 segments (certified uniform radius 0.095 → 0.049; see `results/demo/skeleton.txt`, `skeleton.png`).
 The primitives are the direct Gaussian ones of Paper 3 Prop. 6.2 (exact OU transitions, time-changed Brownian-bridge records).
 
+## Results snapshot (all produced by the scripts above; sample sizes and uncertainty in the linked files)
+
+* **Paper 3 vs analytic references** (`results/E/report.md`, N=1500 localized runs per configuration, 8000 global-thinning runs):
+  first-event survival `P(τ₁>t)` at t∈{0.25,0.5,1} for λ=1+λ₁|x|², λ₁∈{0.25,1,4} — **all 9 Wilson 95% intervals contain the
+  analytic App. E.1 value**; constant-rate counts/moments match (`constant_rate_variance.md`: N=9000, Var X₁ z=−0.05, E N_T z=+1.5);
+  localized vs global thinning on the bounded model: total-variation distance 0.023 (noise level 0.037).
+  Euler jump-diffusion baseline is reported only as an approximate comparison (E[N_T] = 1.52 / 1.56 / 1.55 for 32 / 128 / 512 steps).
+* **Reconstruction cost** (unbounded case): mean 2.7–5.2 whole-skeleton trials per call, but heavy-tailed (max 5942), as Paper 3 Prop. 8.1 predicts.
+* **Paper 1 certificates**: rough driver `ρ_α` certificate `E_n<1` only for `n≥91`; additive-noise route radius 0.142 (T=1) / 0.035 (T=0.25) at level 18.
+* **Paper 2 pilots** (`results/CD/report.md`): paper's fixed-envelope race on the lognormal example, 4/20 completed (rest censored by work limits);
+  OU target bridges: T=0.1 2/8, T=0.25 0/8 completed within 60 s.
+* **Chains** (`results/chain/`): OU Paper 1→2→3, diagnostic radii + truncated race (TV≤0.02): 13/24 completed, up to 3 events;
+  certified radii: 0/6 completed (censored at refinement level 20). Nonlinear direct route matches the analytic survival (|z|≤1);
+  nonlinear guided→correction ran (39/60 completed) but has no power to separate corrected from uncorrected laws.
+
 ## What is (not) achieved — short version
 
 * **Paper 3 (Algorithms A–D)**: implemented and statistically validated against analytic references (first-event survival

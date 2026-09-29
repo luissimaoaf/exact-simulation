@@ -31,6 +31,20 @@ Three output contracts (never mixed):
 | E3 C: next event | P3 Alg C | (s,x) | event or survival | E1,E2, D2, D3 | first-event survival formula (App. E.1) |
 | E4 D: full skeleton | P3 Alg D | x0,T | skeleton + segment records | E3 | moments, counts, resume, refinement |
 
+## Design decisions made while implementing (deviations from the papers, all documented in the modules)
+
+* **Tail-first certificates** (`brownian/tailfirst.py`): random certificate constants are realised by sampling the *last failing level*
+  `K*` exactly and conditioning levels on (not) failing; deterministic bounds then hold for all unrevealed levels. The aggregate Lévy-area
+  residual uses a tree-Gaussian decomposition so that all constrained variables are i.i.d. with exactly known failure probability
+  (this replaces BCD's own constant-simulation procedure; m=2 only).
+* **Linear Bernoulli factory** (`correction/factory.py`): Huber's pseudo-code is not in the paper; an independent randomised-truncation
+  construction with a short proof is used (same contract: bits only, head property, a.s. termination).
+* **Additive-noise guided bridge** (`bridges/additive.py`): Paper 1 §10 route with an unweighted Gronwall driver bound `e^{LT}‖Σ‖r_n`.
+* **Adaptive certified sup-norm tracker** (`jump/records.py::_AdaptiveSup`): lazy per-cell midpoint noises (consistent with later global
+  levels) so that label certification (Alg B) refines only cells that can contain the maximum.
+* **Explicitly labelled approximate modes**: support-truncated race (Chebyshev TV bound), calibrated `diagnostic` radii, diagnostic J-interval
+  for the nonlinear guided→correction chain. The paper-faithful certified/exact modes remain available and are what censoring pilots use.
+
 ## Milestones (each: code + tests + runnable example)
 A models/baselines → B Brownian/rough → C guided → D correction → E jump → F benchmarks, censored-run infrastructure, docs.
 See `docs/CHECKLIST.md` for live status.

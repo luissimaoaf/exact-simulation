@@ -124,7 +124,11 @@ def main(full: bool = False, out: str = "results/chain") -> None:
                f"requested {s3['requested']}, completed {s3['completed']}, censored {s3['censored']}; wall median {s3.get('wall_q50', 0):.1f}s.\n\n"
                + md_table(["law of X_{T/2}", "N", "mean ± se (x1, x2)", "sd (x1, x2)"],
                           [line("direct transformed reference", ref), line("guided proposal (uncorrected)", unc),
-                           line("guided -> Paper 2 correction (diagnostic)", comp)]))
+                           line("guided -> Paper 2 correction (diagnostic)", comp)])
+               + "\nInterpretation: differences between the three laws are within about one standard error at these sample sizes, so this "
+                 "pilot has **no power to distinguish** the corrected from the uncorrected proposal; it demonstrates that the chain runs. "
+                 "The completed subset is conditioned on finishing within the work/level limits (censored runs are logged in nonlinear_p2.jsonl) "
+                 "and must not be read as an unbiased exact sample.\n")
     (out / "report.md").write_text("\n".join(rep))
     print("\n".join(rep))
 
