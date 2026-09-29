@@ -1,6 +1,8 @@
 """Jump mechanisms (rate, local bound, marks, updates) for the benchmark models."""
 from __future__ import annotations
 
+import math
+
 import numpy as np
 
 from .base import Array
@@ -92,3 +94,10 @@ class TransformedQuadraticRateJump(_CoordMarks):
 
     def update(self, t, x, z):
         return Phi(self.rho * Psi(np.asarray(x, float)) + z)
+
+
+class StateDependentMarkJump(QuadraticRateJump):
+    """Quadratic rate with STATE-DEPENDENT marks: Z_j = jump * tanh(|x|) * (+-1) (i.i.d. signs); update rho x + Z."""
+
+    def sample_mark(self, t, x, rng):
+        return self.jump * math.tanh(float(np.linalg.norm(x))) * (2.0 * rng.integers(0, 2, self.d) - 1.0)

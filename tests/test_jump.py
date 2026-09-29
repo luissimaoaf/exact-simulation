@@ -253,3 +253,34 @@ def test_budget_exhaustion_is_explicit():
     jump = QuadraticRateJump(2, 5.0, 2.0, 0.5)
     with pytest.raises(BudgetExhausted):
         sk.simulate_skeleton(OU2, jump, FAC, np.array([1.0, 1.0]), 1.0, np.random.default_rng(0), budget=Budget(max_calls=8))
+
+
+@pytest.mark.slow
+def test_restarts_use_fresh_independent_randomness():
+    """After an accepted event the next call draws a fresh shift/label/schedule (no reuse of the old continuation)."""
+    jump = QuadraticRateJump(2, 4.0, 2.0, 0.5)
+    rng = np.random.default_rng(21)
+    pairs, labels = [], []
+    for _ in range(90):
+        s = sk.simulate_skeleton(OU2, jump, FAC, np.array([0.5, 0.5]), 1.0, rng, keep_records=False)
+        infos = [g.info for g in s.segments]
+        pairs += [(a.theta, b.theta) for a, b in zip(infos[:-1], infos[1:])]
+        labels += [g.label for g in infos]
+    a, b = np.array(pairs).T
+    assert len(a) > 100
+    assert abs(np.corrcoef(a, b)[0, 1]) < 4 / math.sqrt(len(a))
+    assert stats.kstest(np.concatenate([a, b]), "uniform").pvalue > 1e-3
+
+
+def test_state_dependent_marks_use_the_exact_pre_event_state():
+    from exactjd.models.jump import StateDependentMarkJump
+    jump = StateDependentMarkJump(2, 3.0, 1.0, 0.5, jump=0.3)
+    rng = np.random.default_rng(31)
+    seen = 0
+    for _ in range(25):
+        s = sk.simulate_skeleton(OU2, jump, FAC, np.array([0.8, 0.4]), 1.0, rng, keep_records=False)
+        for e in s.events:
+            assert np.allclose(np.abs(e.mark), 0.3 * math.tanh(np.linalg.norm(e.pre)))
+            assert np.allclose(e.post, 0.5 * e.pre + e.mark)
+            seen += 1
+    assert seen > 10

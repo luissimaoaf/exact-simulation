@@ -176,3 +176,25 @@ def test_diagnostic_enclosure_is_flagged_uncertified():
     e = br.diagnostic_enclosure(7)
     assert e.status.startswith("diagnostic") and "UNCERTIFIED" in e.status
     assert np.allclose(e(1.0), [0.6, 0.2]) and np.allclose(e(0.0), [0.0, 0.0])
+
+
+def test_open_domain_shell_search_heston_same_driver_never_resampled():
+    from exactjd.bridges.localization import BoxExhaustion, LocalizedGuidedBridge
+    kap, th, xi, rho = 2.0, 0.04, 0.3, -0.5
+    model = HestonRoughModel(kap, th, xi, rho)
+    u, v, T = np.array([0.0, 0.04]), np.array([0.05, 0.05]), 1.0
+    exh = BoxExhaustion.heston(0.0, 0.04, n=10)
+    found = 0
+    for seed in range(6):
+        br = LocalizedGuidedBridge(model, exh, u, v, T, np.random.default_rng(seed))
+        nodes_before = br.record.nodes(6).copy()
+        try:
+            res = br.shell_search(levels=range(6, 9), diagnostic_radius=0.002)
+        except BudgetExhausted:
+            continue
+        found += 1
+        assert res["status"].startswith("diagnostic")
+        assert np.array_equal(br.record.nodes(6), nodes_before)      # driver retained, not resampled by the search
+        lo, hi = res["center_range"]
+        assert lo[1] > 0                                              # centre stays in D = R x (0,inf)
+    assert found >= 1

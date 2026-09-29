@@ -82,6 +82,7 @@ def main(full: bool = False, out: str = "results/CD") -> None:
     K = model_r.V_bounds([0.0, 0.0], 3.0, range(0, 4))
     bounds = Bounds((K[0], K[1], K[2], K[3]), (0, 0, 0), 0.0, 0.0)
     rows = []
+    ell_R1 = None
     for R in (1.0, 2.0, 5.0, 20.0):
         ok_ell = None
         for e in range(-1, -16, -1):
@@ -91,11 +92,13 @@ def main(full: bool = False, out: str = "results/CD") -> None:
                 ok_ell = ell
                 lam = r.lam
                 break
+        ell_R1 = ok_ell if (R == 1.0) else ell_R1
         rows.append([R, f"{ok_ell:.0e}" if ok_ell else "none >1e-15", f"{lam:.3f}" if ok_ell else "-"])
     txt.append("\n## C2b. Largest block length certifiable by the controlled-Picard test (alpha=0.34), nonlinear benchmark\n\n"
                + md_table(["R", "max ell", "lambda_w"], rows)
-               + "\nEach block multiplies the incoming radius by 1/(1-lambda_w) (eq. (31)); with ell<=1e-5 blocks the horizon T=1 would need >=1e5 blocks: "
-                 "enclosure inflation makes the certified tube unattainable at practical T (see tests for the attainable T~5e-6 regime).\n")
+               + f"\nEach block multiplies the incoming radius by 1/(1-lambda_w) (eq. (31)); with blocks of length ell<={ell_R1 or float('nan'):.0e} (R=1) "
+                 f"the horizon T=1 needs >={1.0/(ell_R1 or 1e-300):.0e} blocks: enclosure inflation makes the certified tube unattainable at practical T "
+                 "(tests cover the attainable tiny-T regime).\n")
     try:
         br = RoughGuidedBridge(NonlinearRoughModel(), [0.0, 0.0], [0.6, 0.2], 1.0, np.random.default_rng(3), budget=Budget())
         br.certified_enclosure(8, max_blocks=300)

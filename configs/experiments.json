@@ -1,0 +1,18 @@
+{
+  "note": "Default (pilot) and --full settings of the experiment scripts; seeds fix independent SeedSequence streams per (config, run).",
+  "AB_reference": {"module": "exactjd.experiments.exp_AB_reference", "seed": 0, "N": {"pilot": 4000, "full": 20000},
+                   "rough_certificate": {"alpha": 0.34, "abar": 0.49, "beta": 0.6, "T": 1.0}},
+  "CD_guided_race": {"module": "exactjd.experiments.exp_CD_guided_race",
+                     "ou": {"B": [[-1.0, 0.3], [-0.2, -0.5]], "c": [0.2, 0.0], "Sigma": "I2"},
+                     "race_pilot": {"runs": {"pilot": 20, "full": 60}, "seed": 11, "limits": {"max_factory_coins": 200000, "max_seconds": 30}},
+                     "ou_bridge_pilot": {"T": [0.1, 0.25], "runs": {"pilot": 8, "full": 30}, "seed": 5, "limits": {"max_seconds": 60, "max_factory_coins": 20000}}},
+  "E_jump": {"module": "exactjd.experiments.exp_E_jump", "d": 2, "T": 1.0, "x0": [0.5, -0.5], "kappa": 1.0, "Sigma": "I2",
+             "constant": {"lambda": 2.0, "jump": 0.2}, "bounded": {"rho": 0.5}, "quadratic": {"lam0": 1.0, "lam1": [0.25, 1.0, 4.0], "rho": 0.5},
+             "runs_localized": {"pilot": 250, "full": 1500}, "runs_global": {"pilot": 1500, "full": 8000},
+             "limits": {"max_seconds": 120}, "seeds": {"A": 1, "B": 3, "C": [11, 14, 26]}},
+  "chain": {"module": "exactjd.experiments.exp_chain", "ou": {"kappa": 1.0}, "T": 0.1, "x0": [0.3, 0.0],
+            "race": {"mode": "truncated", "kmax": 3, "kmin": -10, "max_factory_coins": 5000},
+            "runs": {"pilot": 6, "full": 20}, "limits": {"diagnostic_s": 400, "certified_s": 200}, "seed": 21},
+  "demo_unbounded_skeleton": {"module": "exactjd.experiments.demo_unbounded_skeleton", "d": 3, "T": 1.0, "seed": 7, "eps": 0.1,
+                              "model": {"kappa": 1.0, "lambda": "1+|x|^2", "update": "0.5 x + Z", "|Z_j|": 0.2}}
+}

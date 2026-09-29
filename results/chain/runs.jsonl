@@ -15,3 +15,10 @@
 {"config": "ou_chain_certified", "run": 1, "status": "started", "seed": 21}
 {"config": "ou_chain_certified", "run": 1, "seed": 21, "status": "censored", "reason": "refinement level 20 exceeds MAX_LEVEL=19", "wall": 169.87316982799894, "calls": {"transition": 1, "bridge_record": 1, "race_trial": 7, "membership_refine": 5425, "factory_coin": 636}, "peak_rss_mb": 655.171875}
 {"config": "ou_chain_certified", "run": 2, "status": "started", "seed": 21}
+{"config": "ou_chain_certified", "run": 2, "seed": 21, "status": "censored", "reason": "refinement level 20 exceeds MAX_LEVEL=19", "wall": 123.79146918199876, "calls": {"transition": 1, "bridge_record": 1, "race_trial": 56, "membership_refine": 3599, "factory_coin": 521, "final_refine": 15}, "peak_rss_mb": 701.90234375}
+{"config": "ou_chain_certified", "run": 3, "status": "started", "seed": 21}
+{"config": "ou_chain_certified", "run": 3, "seed": 21, "status": "censored", "reason": "refinement level 20 exceeds MAX_LEVEL=19", "wall": 19.194399808000526, "calls": {"transition": 1, "bridge_record": 1, "race_trial": 9, "membership_refine": 523, "factory_coin": 74}, "peak_rss_mb": 701.90234375}
+{"config": "ou_chain_certified", "run": 4, "status": "started", "seed": 21}
+{"config": "ou_chain_certified", "run": 4, "seed": 21, "status": "censored", "reason": "refinement level 20 exceeds MAX_LEVEL=19", "wall": 88.72763947299973, "calls": {"transition": 2, "bridge_record": 2, "race_trial": 67, "membership_refine": 2575, "factory_coin": 352, "final_refine": 11, "label_refine": 1, "skeleton_trial": 1}, "peak_rss_mb": 701.90234375}
+{"config": "ou_chain_certified", "run": 5, "status": "started", "seed": 21}
+{"config": "ou_chain_certified", "run": 5, "seed": 21, "status": "censored", "reason": "refinement level 20 exceeds MAX_LEVEL=19", "wall": 10.503472087999398, "calls": {"transition": 1, "bridge_record": 1, "race_trial": 1, "membership_refine": 16}, "peak_rss_mb": 701.90234375}
