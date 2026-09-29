@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "exactjd"
+version = "0.1.0"
+description = "Exact jump-skeleton simulation, target-bridge correction and rough-path guided bridges (research code)"
+requires-python = ">=3.11"
+dependencies = ["numpy>=1.26", "scipy>=1.11", "sympy>=1.12", "mpmath>=1.3"]
+
+[project.optional-dependencies]
+dev = ["pytest", "matplotlib"]
+
+[tool.setuptools.packages.find]
+include = ["exactjd*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["slow: statistical / long tests"]
