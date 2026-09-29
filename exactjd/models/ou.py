@@ -31,7 +31,7 @@ class OU:
     @classmethod
     def isotropic(cls, kappa: float, Sigma: Array, c=0.0) -> "OU":
         Sigma = np.atleast_2d(np.asarray(Sigma, float))
-        return cls(-kappa * np.eye(Sigma.shape[0]), c, Sigma)
+        return IsoOU(-kappa * np.eye(Sigma.shape[0]), c, Sigma)
 
     # --- Diffusion protocol
     def drift(self, t: float, x: Array) -> Array:
@@ -112,3 +112,18 @@ class OU:
         A = lam1 * np.sinh(beta * t) / (beta * np.cosh(beta * t) + kappa * np.sinh(beta * t))
         cterm = 0.5 * np.log(np.cosh(beta * t) + kappa / beta * np.sinh(beta * t)) - 0.5 * kappa * t
         return float(np.exp(-lam0 * t - cterm.sum() - np.sum(A * xr**2)))
+
+
+class IsoOU(OU):
+    """B=-kappa I, c=0: closed-form transitions (mean e^{-kh}x, cov (1-e^{-2kh})/(2k) a)."""
+
+    def __post_init__(self):
+        super().__post_init__()
+        self.kappa = -float(self.B[0, 0])
+        self._La = np.linalg.cholesky(self.a)
+
+    def sample_transition(self, s, x, t, rng):
+        h = t - s
+        k = self.kappa
+        var = h if k == 0 else -np.expm1(-2 * k * h) / (2 * k)
+        return np.exp(-k * h) * np.asarray(x, float) + np.sqrt(var) * (self._La @ rng.standard_normal(self.d))

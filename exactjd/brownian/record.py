@@ -26,6 +26,21 @@ def default_tail_probs(kmax: int, gamma: float, counts: np.ndarray) -> np.ndarra
     return pi_target / counts
 
 
+_THRESH_CACHE: dict = {}
+
+
+def _thresholds(d: int, gamma: float):
+    key = (d, gamma)
+    if key not in _THRESH_CACHE:
+        kk = np.arange(1, tf.JMAX + 1)
+        counts = d * 2.0 ** (kk - 1)
+        p = default_tail_probs(tf.JMAX, gamma, counts)
+        t = np.array([tf.threshold_for_tail(pk) for pk in p])
+        pi = np.array([-math.expm1(c * math.log1p(-pk)) for c, pk in zip(counts, p)])
+        _THRESH_CACHE[key] = (t, pi)
+    return _THRESH_CACHE[key]
+
+
 class BrownianRecord:
     """d-dimensional Brownian path on [0,h] (bridge if `b` given, free BM otherwise)."""
 
@@ -37,13 +52,10 @@ class BrownianRecord:
         self.a = np.zeros(d) if a is None else np.asarray(a, float).copy()
         self.b = (self.a + math.sqrt(h) * rng.standard_normal(d)) if b is None else np.asarray(b, float).copy()
         # thresholds t_k (per scalar coordinate) and failure probs pi_k for levels 1..JMAX
-        kk = np.arange(1, tf.JMAX + 1)
-        counts = d * 2.0 ** (kk - 1)
-        p = default_tail_probs(tf.JMAX, gamma, counts)
-        self.t = np.array([tf.threshold_for_tail(pk) for pk in p])
-        self.pi = np.array([-math.expm1(c * math.log1p(-pk)) for c, pk in zip(counts, p)])
+        self.t, self.pi = _thresholds(d, gamma)
         self.Kstar = tf.sample_last_failure(self.pi, rng)
         self._xi: list[np.ndarray] = []     # xi[k-1] shape (2^{k-1}, d)
+        self._axi: dict = {}                # lazily drawn single-cell noises (levels not yet revealed as arrays)
         self._nodes: list[np.ndarray] = [np.stack([self.a, self.b])]
         self._M: list[float] = []           # realised max |coord| per revealed level
         for k in range(1, self.Kstar + 1):
@@ -60,6 +72,9 @@ class BrownianRecord:
     def _reveal_level(self, k: int) -> None:
         assert k == len(self._xi) + 1
         xi = self._draw_level(k)
+        if self._axi:                                   # honour entries already drawn lazily (same latent path)
+            for (kk, idx) in [key for key in self._axi if key[0] == k]:
+                xi[idx] = self._axi.pop((kk, idx))
         self._xi.append(xi)
         self._M.append(float(np.max(np.abs(xi))))
         prev = self._nodes[-1]
@@ -68,6 +83,18 @@ class BrownianRecord:
         new[0::2] = prev
         new[1::2] = 0.5 * (prev[:-1] + prev[1:]) + 0.5 * math.sqrt(delta) * xi
         self._nodes.append(new)
+
+    def xi_entry(self, k: int, idx: int) -> np.ndarray:
+        """Midpoint noise of cell `idx` at level k>K*.  Levels <=K* are always revealed.  Levels beyond are iid
+        truncated normals (|xi|<=t_k coordinatewise), so single entries may be drawn lazily and later arrays honour them."""
+        if k <= len(self._xi):
+            return self._xi[k - 1][idx]
+        key = (k, idx)
+        v = self._axi.get(key)
+        if v is None:
+            v = tf.truncated_normal(self.rng, float(self.t[k - 1]), self.d)
+            self._axi[key] = v
+        return v
 
     def ensure(self, n: int) -> None:
         while len(self._xi) < n:
